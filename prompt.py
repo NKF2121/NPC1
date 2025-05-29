@@ -1,93 +1,74 @@
 import streamlit as st
-from skimage import transform
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
 import requests
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 
-# -------------------------------
-# ฟังก์ชันโหลดภาพจาก URL
-# -------------------------------
-def load_image_from_url(url):
-    response = requests.get(url)
-    img = Image.open(BytesIO(response.content)).convert("RGB")
-    return np.array(img)
+st.set_page_config(page_title="เลือกดูรูปภาพสัตว์เลี้ยง", layout="centered")
+st.title("🐾 เลือกรูปสัตว์เลี้ยง & ปรับขนาดภาพพร้อมแกน X/Y")
 
-# -------------------------------
-# ฟังก์ชัน Flip
-# -------------------------------
-def flip_image(image, direction):
-    if direction == "Horizontal":
-        return np.fliplr(image)
-    elif direction == "Vertical":
-        return np.flipud(image)
-    else:
-        return image
-
-# -------------------------------
-# ฟังก์ชันแสดง histogram
-# -------------------------------
-def plot_histogram(image):
-    fig, ax = plt.subplots()
-    if image.ndim == 3 and image.shape[2] == 3:
-        for i, color in enumerate(['red', 'green', 'blue']):
-            ax.plot(np.histogram(image[:, :, i], bins=256, range=(0, 1))[0], label=color)
-        ax.legend()
-        ax.set_title("Histogram (RGB Channels)")
-    else:
-        ax.hist(image.ravel(), bins=256, color='gray')
-        ax.set_title("Histogram (Grayscale)")
-    return fig
-
-# -------------------------------
-# URLs ของภาพตัวอย่าง
-# -------------------------------
-image_options = {
-    "Dog": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Bulldog_inglese.jpg",
-    "Cat": "https://cdn.britannica.com/39/226539-050-D21D7721/Portrait-of-a-cat-with-whiskers-visible.jpg"
+# URLs ของภาพ
+image_urls = {
+    "สุนัข": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Bulldog_inglese.jpg",
+    "แมว": "https://cdn.britannica.com/39/226539-050-D21D7721/Portrait-of-a-cat-with-whiskers-visible.jpg",
+    "แมวสูงวัย": "https://vetmarlborough.co.nz/wp-content/uploads/old-cats.jpg"
 }
 
-# -------------------------------
-# ส่วน UI
-# -------------------------------
-st.title("Interactive Image Processing with scikit-image")
+# โหลดภาพจาก URL
+@st.cache_data
+def load_image(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return Image.open(BytesIO(response.content)).convert("RGB")
+    except Exception as e:
+        st.error(f"โหลดภาพไม่สำเร็จ: {e}")
+        return None
 
-st.subheader("เลือกภาพตัวอย่าง")
-cols = st.columns(2)
+# วาดแกน X/Y ตรงขอบภาพ
+def draw_axes(image, step=50):
+    draw = ImageDraw.Draw(image)
+    width, height = image.size
+    font = ImageFont.load_default()
 
-for i, (label, url) in enumerate(image_options.items()):
+    # วาดแกน X (บน)
+    for x in range(0, width, step):
+        draw.line([(x, 0), (x, 10)], fill="red", width=1)
+        draw.text((x + 2, 2), str(x), fill="red", font=font)
+
+    # วาดแกน Y (ซ้าย)
+    for y in range(0, height, step):
+        draw.line([(0, y), (10, y)], fill="blue", width=1)
+        draw.text((2, y + 2), str(y), fill="blue", font=font)
+
+    return image
+
+# แสดง thumbnails + ปุ่มเลือก
+st.markdown("### 🔽 เลือกภาพ")
+cols = st.columns(len(image_urls))
+selected = None
+
+for i, (label, url) in enumerate(image_urls.items()):
     with cols[i]:
-        st.image(url, caption=label, width=200)
-        if st.button(f"เลือก {label}"):
-            st.session_state.original_image = load_image_from_url(url)
-            st.session_state.reset = True  # trigger reset
+        image = load_image(url)
+        if image:
+            st.image(image.resize((150, 100)), caption=label)
+            if st.button(f"เลือก {label}", key=label):
+                selected = label
 
-# -------------------------------
-# ถ้ามีภาพที่โหลดแล้ว
-# -------------------------------
-if 'original_image' in st.session_state:
-    if 'reset' not in st.session_state or st.session_state.reset:
-        st.session_state.resize_scale = 1.0
-        st.session_state.angle = 0
-        st.session_state.flip_option = "None"
-        st.session_state.reset = False
+# แสดงภาพใหญ่ พร้อม resize + แกน
+if selected:
+    st.markdown(f"### 📸 ภาพที่เลือก: **{selected}**")
+    image = load_image(image_urls[selected])
+    if image:
+        orig_w, orig_h = image.size
+        st.write(f"ขนาดต้นฉบับ: {orig_w} x {orig_h} px")
 
-    image = st.session_state.original_image
+        # sliders สำหรับปรับขนาด
+        new_w = st.slider("ความกว้าง (px)", 50, orig_w * 2, orig_w)
+        new_h = st.slider("ความสูง (px)", 50, orig_h * 2, orig_h)
 
-    # แสดงภาพต้นฉบับ
-    st.subheader("ภาพต้นฉบับ (Original Image with Axes)")
-    fig_orig, ax_orig = plt.subplots()
-    ax_orig.imshow(image)
-    ax_orig.set_title("Original Image")
-    ax_orig.set_xlabel("X (Column)")
-    ax_orig.set_ylabel("Y (Row)")
-    st.pyplot(fig_orig)
+        # resize และวาดแกน
+        resized = image.resize((new_w, new_h))
+        image_with_axes = draw_axes(resized.copy(), step=50)
 
-    # ----------------------------
-    # Resize
-    # ----------------------------
-    st.subheader("ปรับขนาด (Resize Image)")
-    resize_scale = st.slider("ปรับขนาด (0.1 = เล็กลง, 2.0 = ใหญ่ขึ้น)", 0.1, 2.0, st.session_state.resize_scale, step=0.1)
-    st.session_state.resize_scale = resize_scale
-    resized_image = transform.rescale(image, resize_scale, channel_axis=2, anti_aliasing=True)
+        st.image(image_with_axes, caption=f"{new_w} x {new_h} px พร้อมแกน X/Y", use_container_width=False)
