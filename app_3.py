@@ -1,5 +1,3 @@
-%%writefile app_3.py
-
 import streamlit as st
 from skimage import io, img_as_float
 import numpy as np
