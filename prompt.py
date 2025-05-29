@@ -35,9 +35,19 @@ for i, (label, url) in enumerate(image_urls.items()):
                 selected = label
             st.image(image.resize((150, 100)), caption=label)
 
-# แสดงภาพที่เลือกในขนาดใหญ่
+# แสดงภาพที่เลือกในขนาดใหญ่ พร้อมแกน X Y และการ Resize
 if selected:
     st.subheader(f"ภาพขนาดใหญ่: {selected}")
     big_image = load_image(image_urls[selected])
     if big_image:
-        st.image(big_image, use_container_width=True)
+        orig_width, orig_height = big_image.size
+        st.write(f"📏 ขนาดต้นฉบับ: {orig_width} x {orig_height} พิกเซล")
+
+        # ปรับขนาดใหม่
+        st.markdown("### 🔧 ปรับขนาดภาพ")
+        new_width = st.slider("ความกว้าง (px)", min_value=50, max_value=orig_width * 2, value=orig_width)
+        new_height = st.slider("ความสูง (px)", min_value=50, max_value=orig_height * 2, value=orig_height)
+
+        resized_image = big_image.resize((new_width, new_height))
+        st.write(f"🖼️ ขนาดใหม่: {new_width} x {new_height} พิกเซล")
+        st.image(resized_image, use_container_width=False)
