@@ -1,56 +1,62 @@
 import streamlit as st
-from PIL import Image
 import requests
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
-from ultralytics import YOLO
 
-st.set_page_config(page_title="Object Detection", layout="centered")
-st.title("🔍 ตรวจจับวัตถุในภาพ (Object Detection)")
+st.set_page_config(page_title="Blend รูปแมว", layout="centered")
+st.title("😺 ผสมภาพแมว + ปรับขนาด + แสดงแกน X/Y")
 
-# โหลดโมเดล YOLOv5
-@st.cache_resource
-def load_model():
-    return YOLO("yolov8n.pt")  # ใช้โมเดลขนาดเล็ก
+# URLs ของภาพแมว 2 ใบ
+image1_url = "https://cdn.britannica.com/39/226539-050-D21D7721/Portrait-of-a-cat-with-whiskers-visible.jpg"
+image2_url = "https://vetmarlborough.co.nz/wp-content/uploads/old-cats.jpg"
 
-model = load_model()
+# โหลดรูปภาพ
+@st.cache_data
+def load_image(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return Image.open(BytesIO(response.content)).convert("RGB")
+    except Exception as e:
+        st.error(f"โหลดภาพไม่สำเร็จ: {e}")
+        return None
 
-# เลือกว่าจะใช้ URL หรือ Upload
-option = st.radio("เลือกรูปภาพ:", ["📷 อัปโหลดไฟล์", "🌐 ใส่ URL"])
+# วาดแกน X/Y
+def draw_axes(image, step=50):
+    draw = ImageDraw.Draw(image)
+    width, height = image.size
+    font = ImageFont.load_default()
+    # แกน X
+    for x in range(0, width, step):
+        draw.line([(x, 0), (x, 10)], fill="red", width=1)
+        draw.text((x + 2, 2), str(x), fill="red", font=font)
+    # แกน Y
+    for y in range(0, height, step):
+        draw.line([(0, y), (10, y)], fill="blue", width=1)
+        draw.text((2, y + 2), str(y), fill="blue", font=font)
+    return image
 
-image = None
+# โหลดทั้งสองภาพ
+img1 = load_image(image1_url)
+img2 = load_image(image2_url)
 
-if option == "📷 อัปโหลดไฟล์":
-    uploaded_file = st.file_uploader("อัปโหลดรูปภาพ", type=["jpg", "jpeg", "png"])
-    if uploaded_file:
-        image = Image.open(uploaded_file).convert("RGB")
+if img1 and img2:
+    st.markdown("### 🔄 ปรับระดับการผสมภาพ (Blending)")
+    alpha = st.slider("ระดับการผสม (0.0 = เฉพาะภาพที่ 2, 1.0 = เฉพาะภาพที่ 1)", 0.0, 1.0, 0.5, 0.01)
 
-elif option == "🌐 ใส่ URL":
-    url = st.text_input("URL ของภาพ", "https://media.istockphoto.com/id/467652436/photo/cats-and-dogs.jpg")
-    if url:
-        try:
-            response = requests.get(url)
-            image = Image.open(BytesIO(response.content)).convert("RGB")
-        except Exception as e:
-            st.error(f"โหลดภาพไม่สำเร็จ: {e}")
+    # Resize ให้ขนาดเท่ากันก่อน Blend
+    min_width = min(img1.width, img2.width)
+    min_height = min(img1.height, img2.height)
+    img1_resized = img1.resize((min_width, min_height))
+    img2_resized = img2.resize((min_width, min_height))
 
-if image:
-    st.image(image, caption="ภาพต้นฉบับ", use_column_width=True)
+    blended = Image.blend(img1_resized, img2_resized, alpha)
 
-    # ตรวจจับวัตถุ
-    st.markdown("### 🔍 กำลังตรวจจับวัตถุ...")
-    results = model(image)
+    st.markdown("### 📐 ปรับขนาดภาพหลังการผสม")
+    new_w = st.slider("ความกว้าง (px)", 50, min_width * 2, min_width)
+    new_h = st.slider("ความสูง (px)", 50, min_height * 2, min_height)
 
-    # แสดงผลภาพที่มี bounding box
-    result_image = results[0].plot()
-    st.image(result_image, caption="📦 วัตถุที่พบ", use_column_width=True)
+    resized_blended = blended.resize((new_w, new_h))
+    final_image = draw_axes(resized_blended.copy(), step=50)
 
-    # แสดงวัตถุที่พบ
-    boxes = results[0].boxes
-    classes = boxes.cls.tolist()
-    names = results[0].names
-
-    detected_objects = [names[int(cls)] for cls in classes]
-    if detected_objects:
-        st.success(f"🔎 วัตถุที่ตรวจพบ: {', '.join(set(detected_objects))}")
-    else:
-        st.warning("ไม่พบวัตถุที่รู้จักในภาพนี้")
+    st.image(final_image, caption=f"ภาพแมว Blended ขนาด {new_w}x{new_h} px", use_container_width=False)
