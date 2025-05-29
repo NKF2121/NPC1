@@ -1,17 +1,53 @@
 import streamlit as st
+from skimage import transform
+import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image
 import requests
-from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 
-st.set_page_config(page_title="เลือกดูรูปภาพสัตว์เลี้ยง", layout="centered")
-st.title("🐾 เลือกรูปสัตว์เลี้ยง & ปรับขนาดภาพพร้อมแกน X/Y")
+# -------------------------------
+# ฟังก์ชันโหลดภาพจาก URL
+# -------------------------------
+def load_image_from_url(url):
+    response = requests.get(url)
+    img = Image.open(BytesIO(response.content)).convert("RGB")
+    return np.array(img)
 
-# URLs ของภาพ
-image_urls = {
-    "สุนัข": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Bulldog_inglese.jpg",
-    "แมว": "https://cdn.britannica.com/39/226539-050-D21D7721/Portrait-of-a-cat-with-whiskers-visible.jpg",
-    "แมวสูงวัย": "https://vetmarlborough.co.nz/wp-content/uploads/old-cats.jpg"
+# -------------------------------
+# ฟังก์ชัน Flip
+# -------------------------------
+def flip_image(image, direction):
+    if direction == "Horizontal":
+        return np.fliplr(image)
+    elif direction == "Vertical":
+        return np.flipud(image)
+    else:
+        return image
+
+# -------------------------------
+# ฟังก์ชันแสดง histogram
+# -------------------------------
+def plot_histogram(image):
+    fig, ax = plt.subplots()
+    if image.ndim == 3 and image.shape[2] == 3:
+        for i, color in enumerate(['red', 'green', 'blue']):
+            ax.plot(np.histogram(image[:, :, i], bins=256, range=(0, 1))[0], label=color)
+        ax.legend()
+        ax.set_title("Histogram (RGB Channels)")
+    else:
+        ax.hist(image.ravel(), bins=256, color='gray')
+        ax.set_title("Histogram (Grayscale)")
+    return fig
+
+# -------------------------------
+# URLs ของภาพตัวอย่าง
+# -------------------------------
+image_options = {
+    "Dog": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Bulldog_inglese.jpg",
+    "Cat": "https://cdn.britannica.com/39/226539-050-D21D7721/Portrait-of-a-cat-with-whiskers-visible.jpg"
 }
+
 # -------------------------------
 # ส่วน UI
 # -------------------------------
@@ -26,16 +62,6 @@ for i, (label, url) in enumerate(image_options.items()):
         if st.button(f"เลือก {label}"):
             st.session_state.original_image = load_image_from_url(url)
             st.session_state.reset = True  # trigger reset
-# โหลดภาพจาก URL
-@st.cache_data
-def load_image(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return Image.open(BytesIO(response.content)).convert("RGB")
-    except Exception as e:
-        st.error(f"โหลดภาพไม่สำเร็จ: {e}")
-        return None
 
 # -------------------------------
 # ถ้ามีภาพที่โหลดแล้ว
@@ -65,11 +91,3 @@ if 'original_image' in st.session_state:
     resize_scale = st.slider("ปรับขนาด (0.1 = เล็กลง, 2.0 = ใหญ่ขึ้น)", 0.1, 2.0, st.session_state.resize_scale, step=0.1)
     st.session_state.resize_scale = resize_scale
     resized_image = transform.rescale(image, resize_scale, channel_axis=2, anti_aliasing=True)
-
-    # ----------------------------
-    # Rotate
-    # ----------------------------
-    st.subheader("หมุนภาพ (Rotate Image)")
-    angle = st.slider("เลือกองศาในการหมุน", -180, 180, st.session_state.angle)
-    st.session_state.angle = angle
-    rotated_image = transform.rotate(resized_image, angle)
