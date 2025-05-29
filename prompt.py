@@ -25,22 +25,13 @@ def load_image(url):
         return None
 
 # วาดแกน X/Y ตรงขอบภาพ
-def draw_axes(image, step=50):
-    draw = ImageDraw.Draw(image)
-    width, height = image.size
-    font = ImageFont.load_default()
-
-    # วาดแกน X (บน)
-    for x in range(0, width, step):
-        draw.line([(x, 0), (x, 10)], fill="red", width=1)
-        draw.text((x + 2, 2), str(x), fill="red", font=font)
-
-    # วาดแกน Y (ซ้าย)
-    for y in range(0, height, step):
-        draw.line([(0, y), (10, y)], fill="blue", width=1)
-        draw.text((2, y + 2), str(y), fill="blue", font=font)
-
-    return image
+st.subheader("ภาพต้นฉบับ (Original Image with Axes)")
+    fig_orig, ax_orig = plt.subplots()
+    ax_orig.imshow(image)
+    ax_orig.set_title("Original Image")
+    ax_orig.set_xlabel("X (Column)")
+    ax_orig.set_ylabel("Y (Row)")
+    st.pyplot(fig_orig)
 
 # แสดง thumbnails + ปุ่มเลือก
 st.markdown("### 🔽 เลือกภาพ")
