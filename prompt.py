@@ -3,20 +3,28 @@ import requests
 from PIL import Image
 from io import BytesIO
 
-# ตั้งชื่อหน้า
-st.title("แสดงรูปภาพจาก URL")
+st.title("เลือกรูปภาพจากเว็บไซต์แล้วแสดง")
 
-# URL ของรูปภาพ
-image_url = "https://upload.wikimedia.org/wikipedia/commons/b/bf/Bulldog_inglese.jpg"
+# ตัวเลือก URL รูปภาพ
+image_options = {
+    "Bulldog Inglese": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Bulldog_inglese.jpg",
+    "Old Cat": "https://vetmarlborough.co.nz/wp-content/uploads/old-cats.jpg"
+}
 
-# โหลดรูปภาพจาก URL
+# เลือกรูปภาพ
+selected_label = st.selectbox("เลือกรูปภาพ", list(image_options.keys()))
+
+# ดึง URL ของรูปภาพที่เลือก
+selected_url = image_options[selected_label]
+
+# โหลดรูปจาก URL
 try:
-    response = requests.get(image_url)
-    response.raise_for_status()  # ตรวจสอบว่าโหลดสำเร็จ
+    response = requests.get(selected_url)
+    response.raise_for_status()
     image = Image.open(BytesIO(response.content))
 
-    # แสดงรูปภาพ
-    st.image(image, caption="Bulldog Inglese", use_container_width=True)
+    # แสดงรูป
+    st.image(image, caption=selected_label, use_column_width=True)
 
 except requests.exceptions.RequestException as e:
     st.error(f"เกิดข้อผิดพลาดในการโหลดรูปภาพ: {e}")
