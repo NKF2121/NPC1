@@ -33,7 +33,7 @@ for i, (name, url) in enumerate(image_urls.items()):
         if image:
             if st.button(f"ดู {name}"):
                 selected_image = (name, image)
-            st.image(image, caption=name, use_column_width=True)
+            st.image(image, caption=name, use_container_width=True)
 
 # แสดงภาพที่เลือก
 if selected_image:
