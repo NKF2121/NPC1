@@ -10,7 +10,7 @@ model = YOLO('yolov8n.pt')
 st.title("🔎 ตรวจจับวัตถุจาก URL ของภาพด้วย YOLOv8")
 
 # รับ URL จากผู้ใช้
-image_url = st.text_input("📌 วาง URL ของภาพที่ต้องการตรวจจับวัตถุ",https://media.istockphoto.com/id/467652436/th/%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%96%E0%B9%88%E0%B8%B2%E0%B8%A2/%E0%B8%9C%E0%B8%A5%E0%B9%84%E0%B8%A1%E0%B9%89%E0%B8%A3%E0%B8%A7%E0%B8%A1%E0%B8%AA%E0%B8%94.jpg?s=612x612&w=0&k=20&c=gwVLWV-IWC8ZwPopAB0_8iXtUgh0wrry51YrsV5_yIs=)
+image_url = st.text_input("📌 วาง URL ของภาพที่ต้องการตรวจจับวัตถุ",https://www.thehrdigest.com/wp-content/uploads/2021/12/5-Types-of-People-e1640865120273.jpg)
 
 if image_url:
     try:
