@@ -24,8 +24,20 @@ def load_image(url):
         st.error(f"โหลดภาพไม่สำเร็จ: {e}")
         return None
 
-# วาดแกน X/Y ตรงขอบภาพ
-st.subheader("ภาพต้นฉบับ (Original Image with Axes)")
+# -------------------------------
+# ถ้ามีภาพที่โหลดแล้ว
+# -------------------------------
+if 'original_image' in st.session_state:
+    if 'reset' not in st.session_state or st.session_state.reset:
+        st.session_state.resize_scale = 1.0
+        st.session_state.angle = 0
+        st.session_state.flip_option = "None"
+        st.session_state.reset = False
+
+    image = st.session_state.original_image
+
+    # แสดงภาพต้นฉบับ
+    st.subheader("ภาพต้นฉบับ (Original Image with Axes)")
     fig_orig, ax_orig = plt.subplots()
     ax_orig.imshow(image)
     ax_orig.set_title("Original Image")
@@ -33,33 +45,18 @@ st.subheader("ภาพต้นฉบับ (Original Image with Axes)")
     ax_orig.set_ylabel("Y (Row)")
     st.pyplot(fig_orig)
 
-# แสดง thumbnails + ปุ่มเลือก
-st.markdown("### 🔽 เลือกภาพ")
-cols = st.columns(len(image_urls))
-selected = None
+    # ----------------------------
+    # Resize
+    # ----------------------------
+    st.subheader("ปรับขนาด (Resize Image)")
+    resize_scale = st.slider("ปรับขนาด (0.1 = เล็กลง, 2.0 = ใหญ่ขึ้น)", 0.1, 2.0, st.session_state.resize_scale, step=0.1)
+    st.session_state.resize_scale = resize_scale
+    resized_image = transform.rescale(image, resize_scale, channel_axis=2, anti_aliasing=True)
 
-for i, (label, url) in enumerate(image_urls.items()):
-    with cols[i]:
-        image = load_image(url)
-        if image:
-            st.image(image.resize((150, 100)), caption=label)
-            if st.button(f"เลือก {label}", key=label):
-                selected = label
-
-# แสดงภาพใหญ่ พร้อม resize + แกน
-if selected:
-    st.markdown(f"### 📸 ภาพที่เลือก: **{selected}**")
-    image = load_image(image_urls[selected])
-    if image:
-        orig_w, orig_h = image.size
-        st.write(f"ขนาดต้นฉบับ: {orig_w} x {orig_h} px")
-
-        # sliders สำหรับปรับขนาด
-        new_w = st.slider("ความกว้าง (px)", 50, orig_w * 2, orig_w)
-        new_h = st.slider("ความสูง (px)", 50, orig_h * 2, orig_h)
-
-        # resize และวาดแกน
-        resized = image.resize((new_w, new_h))
-        image_with_axes = draw_axes(resized.copy(), step=50)
-
-        st.image(image_with_axes, caption=f"{new_w} x {new_h} px พร้อมแกน X/Y", use_container_width=False)
+    # ----------------------------
+    # Rotate
+    # ----------------------------
+    st.subheader("หมุนภาพ (Rotate Image)")
+    angle = st.slider("เลือกองศาในการหมุน", -180, 180, st.session_state.angle)
+    st.session_state.angle = angle
+    rotated_image = transform.rotate(resized_image, angle)
