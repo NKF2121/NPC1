@@ -40,4 +40,4 @@ if selected:
     st.subheader(f"ภาพขนาดใหญ่: {selected}")
     big_image = load_image(image_urls[selected])
     if big_image:
-        st.image(big_image, use_column_width=True)
+        st.image(big_image, use_container_width=True)
