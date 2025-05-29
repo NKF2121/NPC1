@@ -12,7 +12,20 @@ image_urls = {
     "แมว": "https://cdn.britannica.com/39/226539-050-D21D7721/Portrait-of-a-cat-with-whiskers-visible.jpg",
     "แมวสูงวัย": "https://vetmarlborough.co.nz/wp-content/uploads/old-cats.jpg"
 }
+# -------------------------------
+# ส่วน UI
+# -------------------------------
+st.title("Interactive Image Processing with scikit-image")
 
+st.subheader("เลือกภาพตัวอย่าง")
+cols = st.columns(2)
+
+for i, (label, url) in enumerate(image_options.items()):
+    with cols[i]:
+        st.image(url, caption=label, width=200)
+        if st.button(f"เลือก {label}"):
+            st.session_state.original_image = load_image_from_url(url)
+            st.session_state.reset = True  # trigger reset
 # โหลดภาพจาก URL
 @st.cache_data
 def load_image(url):
