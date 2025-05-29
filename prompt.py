@@ -23,24 +23,22 @@ def load_image(url):
         st.error(f"ไม่สามารถโหลดรูปภาพ: {e}")
         return None
 
-# วาดแกน X และ Y ลงในรูป
-def draw_axes(image, step=50):
-    draw = ImageDraw.Draw(image)
-    width, height = image.size
-    font = ImageFont.load_default()
+# แสดงภาพต้นฉบับ
+    st.subheader("ภาพต้นฉบับ (Original Image with Axes)")
+    fig_orig, ax_orig = plt.subplots()
+    ax_orig.imshow(image)
+    ax_orig.set_title("Original Image")
+    ax_orig.set_xlabel("X (Column)")
+    ax_orig.set_ylabel("Y (Row)")
+    st.pyplot(fig_orig)
 
-    # แกน X (แนวนอน)
-    for x in range(0, width, step):
-        draw.line([(x, 0), (x, height)], fill=(255, 0, 0), width=1)
-        draw.text((x + 2, 2), str(x), fill=(255, 0, 0), font=font)
-
-    # แกน Y (แนวตั้ง)
-    for y in range(0, height, step):
-        draw.line([(0, y), (width, y)], fill=(0, 0, 255), width=1)
-        draw.text((2, y + 2), str(y), fill=(0, 0, 255), font=font)
-
-    return image
-
+    # ----------------------------
+    # Resize
+    # ----------------------------
+    st.subheader("ปรับขนาด (Resize Image)")
+    resize_scale = st.slider("ปรับขนาด (0.1 = เล็กลง, 2.0 = ใหญ่ขึ้น)", 0.1, 2.0, st.session_state.resize_scale, step=0.1)
+    st.session_state.resize_scale = resize_scale
+    resized_image = transform.rescale(image, resize_scale, channel_axis=2, anti_aliasing=True)
 # ส่วนแสดงรูปขนาดเล็ก
 cols = st.columns(len(image_urls))
 selected = None
