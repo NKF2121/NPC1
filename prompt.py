@@ -73,11 +73,6 @@ if selected:
 
         st.image(image_with_axes, caption=f"{new_w} x {new_h} px พร้อมแกน X/Y", use_container_width=False)
 
-import streamlit as st
-import requests
-from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
-
 st.set_page_config(page_title="Blend รูปแมว", layout="centered")
 st.title("😺 ผสมภาพแมว + ปรับขนาด + แสดงแกน X/Y")
 
