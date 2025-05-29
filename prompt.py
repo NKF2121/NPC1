@@ -39,34 +39,7 @@ def load_image(url):
     resize_scale = st.slider("ปรับขนาด (0.1 = เล็กลง, 2.0 = ใหญ่ขึ้น)", 0.1, 2.0, st.session_state.resize_scale, step=0.1)
     st.session_state.resize_scale = resize_scale
     resized_image = transform.rescale(image, resize_scale, channel_axis=2, anti_aliasing=True)
-# ส่วนแสดงรูปขนาดเล็ก
-cols = st.columns(len(image_urls))
-selected = None
 
-for i, (label, url) in enumerate(image_urls.items()):
-    with cols[i]:
-        img = load_image(url)
-        if img:
-            if st.button(label):
-                selected = label
-            st.image(img.resize((150, 100)), caption=label)
-
-# แสดงภาพที่เลือกพร้อมปรับขนาดและแกน
-if selected:
-    st.subheader(f"ภาพที่เลือก: {selected}")
-    img = load_image(image_urls[selected])
-    if img:
-        orig_w, orig_h = img.size
-        st.write(f"📏 ขนาดต้นฉบับ: {orig_w} x {orig_h} px")
-
-        # ปรับขนาด
-        new_w = st.slider("ความกว้าง (px)", 50, orig_w * 2, orig_w)
-        new_h = st.slider("ความสูง (px)", 50, orig_h * 2, orig_h)
-
-        resized = img.resize((new_w, new_h))
-
-        # วาดแกน
-        image_with_axes = draw_axes(resized.copy(), step=50)
 
         st.write(f"📐 ขนาดใหม่: {new_w} x {new_h} px พร้อมแกน X/Y ทุก 50px")
         st.image(image_with_axes, use_container_width=False)
