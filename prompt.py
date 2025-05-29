@@ -24,7 +24,7 @@ try:
     image = Image.open(BytesIO(response.content))
 
     # แสดงรูป
-    st.image(image, caption=selected_label, use_column_width=True)
+    st.image(image, caption=selected_label, use_container_width=True)
 
 except requests.exceptions.RequestException as e:
     st.error(f"เกิดข้อผิดพลาดในการโหลดรูปภาพ: {e}")
