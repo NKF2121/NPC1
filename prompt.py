@@ -38,4 +38,4 @@ for i, (name, url) in enumerate(image_urls.items()):
 # แสดงภาพที่เลือก
 if selected_image:
     st.subheader(f"แสดงภาพ: {selected_image[0]}")
-    st.image(selected_image[1], use_column_width=True)
+    st.image(selected_image[1], use_container_width=True)
