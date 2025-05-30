@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2,
-          decode_predictions, preprocess_input
+from tensorflow.keras.applications.mobilenet_v2 import (MobileNetV2,
+          decode_predictions, preprocess_input)
 from tensorflow.keras.preprocessing.image import img_to_array
 import numpy as np
 from PIL import Image
