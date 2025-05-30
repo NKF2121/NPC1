@@ -1,45 +1,63 @@
-import streamlit as st
+import tensorflow as tf
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2,
+          decode_predictions, preprocess_input
+from tensorflow.keras.preprocessing.image import img_to_array
+import numpy as np
 from PIL import Image
+from PIL import ImageEnhance
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import requests
 from io import BytesIO
-from ultralytics import YOLO
+# ---------------------------
+# ฟังก์ชันโหลดภาพจาก URL
+# ---------------------------
+def load_image_from_url(url):
+  response = requests.get(url, stream=True)
+  if "image" not in response.headers.get("content-type", ""):
+      raise ValueError("URL does not contain a valid image.")
+  try:
+      img = Image.open(BytesIO(response.content)).convert("RGB")
+      return np.array(img)
+  except Exception as e:
+      raise ValueError(f"Error loading image: {e}")
+def show_image(image, title_image="Show Image"):
+  plt.title(title_image)
+  plt.imshow(image)
+  plt.show()
+# Load model
+model = MobileNetV2(weights="imagenet")
+# ==== Sample image collection (many entries possible) ====
+sample_images = {
+    "Dog": "https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=3062&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "Bicycle": "https://plus.unsplash.com/premium_photo-1663091740058-b07d3f6832c2?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "Cat": "https://plus.unsplash.com/premium_photo-1677181729163-33e6b59d5c8f?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "Car": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "Mountain": "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?q=80&w=2942&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "Benz": "https://vehicle-images.dealerinspire.com/6bfa-11000684/WDDHF5KB3EA884195/f7babbf9aef39ec989ac4cd76e7c13d4.jpg"
+}
+from skimage.transform import resize
 
-# โหลดโมเดล YOLOv8 (ขนาดเล็ก โหลดเร็ว)
-model = YOLO('yolov8n.pt')
+image = load_image_from_url(sample_images["Dog"])
+show_image(image, title_image="Original image size")
 
-st.title("🧠 ตรวจจับวัตถุจากภาพ (ฝัง URL โดยตรง)")
+# Preprocess image
+image_resized = resize(image, (224, 224), anti_aliasing=True)
+image_resized = (image_resized * 255).astype(np.uint8)
+#or
+#image_resized = tf.image.resize(image, (224, 224)).numpy()
 
-# URL ของภาพ (ไม่ต้องรับจากผู้ใช้)
-image_url = "https://www.thehrdigest.com/wp-content/uploads/2021/12/5-Types-of-People-e1640865120273.jpg"
+show_image(image_resized, title_image="Input to MobileNetV2")
 
-# ดาวน์โหลดและแสดงภาพ
-try:
-    response = requests.get(image_url)
-    image = Image.open(BytesIO(response.content)).convert("RGB")
-    
-    st.image(image, caption="📷 ภาพจาก URL", use_container_width=True)
+img_array = np.array(image_resized)
+img_array_expanded = np.expand_dims(img_array, axis=0)
+processed_img = preprocess_input(img_array_expanded)
 
-    # ตรวจจับวัตถุ
-    results = model(image)
 
-    # แสดงผลภาพที่ตรวจจับแล้ว
-    st.subheader("🎯 ผลลัพธ์การตรวจจับวัตถุ:")
-    result_image = results[0].plot()
-    st.image(result_image, use_container_width=True)
+# Predict
+predictions = model.predict(processed_img)
+decoded_preds = decode_predictions(predictions, top=5)[0]
 
-    # แสดงวัตถุที่ตรวจพบ
-    st.subheader("📌 วัตถุที่พบในภาพ:")
-    detected_objects = set()
-    for box in results[0].boxes:
-        cls_id = int(box.cls[0])
-        label = model.names[cls_id]
-        detected_objects.add(label)
-
-    if detected_objects:
-        for obj in detected_objects:
-            st.write(f"✅ {obj}")
-    else:
-        st.write("❌ ไม่พบวัตถุในภาพ")
-
-except Exception as e:
-    st.error(f"เกิดข้อผิดพลาดในการโหลดหรือประมวลผลภาพ: {e}")
+print("### Predictions:")
+for i, (imagenet_id, label, prob) in enumerate(decoded_preds):
+  print(f"**{i+1}. {label}** ({prob*100:.2f}%)")
