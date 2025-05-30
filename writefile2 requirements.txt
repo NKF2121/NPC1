@@ -1,0 +1,6 @@
+streamlit==1.44.0
+pillow==11.1.0
+#tensorflow==2.19.0
+matplotlib==3.10.1
+#easycor==1.7.2
+easyocr @ git+https://github.com/JaidedAI/EasyOCR
