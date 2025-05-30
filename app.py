@@ -17,7 +17,7 @@ try:
     response = requests.get(image_url)
     image = Image.open(BytesIO(response.content)).convert("RGB")
     
-    st.image(image, caption="📷 ภาพจาก URL", use_column_width=True)
+    st.image(image, caption="📷 ภาพจาก URL", use_container_width=True)
 
     # ตรวจจับวัตถุ
     results = model(image)
